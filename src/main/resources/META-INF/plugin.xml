@@ -1,0 +1,45 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>me.tomsavage.vamify.Vamify</id>
+
+    <!-- Public plugin name should be written in Title Case.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>Vamify</name>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor email="tom@tomsavage.me" url="https://tomsavage.me">TomSavage</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+    <description><![CDATA[
+    Vamify - Gamify Vim for PHPStorm
+    Do the following as you type
+    <ul>
+        <li>Level up</li>
+        <li>Slay monsters</li>
+        <li>Collect items</li>
+        <li>Travel across the kingdom of Vame</li>
+    </ul>
+  ]]></description>
+
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <!-- Extension points defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+
+        <typedHandler implementation="me.tomsavage.vamify.TypedHandler"/>
+        <toolWindow id="Vamify" anchor="right" factoryClass="me.tomsavage.vamify.GameWindow"/>
+    </extensions>
+    <actions>
+        <action id="me.tomsavage.vamify.PopupGameWindowAction" class="me.tomsavage.vamify.PopupGameWindowAction"
+                text="Popup Game Window Action" description="Opens the game window">
+            <add-to-group group-id="ToolsMenu" anchor="first"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="shift alt V"/>
+        </action>
+    </actions>
+</idea-plugin>
