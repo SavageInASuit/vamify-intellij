@@ -14,7 +14,6 @@ import org.jetbrains.annotations.NotNull;
 import javax.swing.*;
 import javax.swing.plaf.basic.BasicProgressBarUI;
 import java.awt.*;
-import java.util.logging.Logger;
 
 public class GameWindow implements ToolWindowFactory {
 
@@ -46,18 +45,17 @@ public class GameWindow implements ToolWindowFactory {
             playerHealthProgressBar.setValue(progress.getState().health);
             healthText.setText(progress.getState().health + "/" + progress.player.maxHealthForLevel(progress.getState().level));
 
-            String nextTile = progress.world.getNextTile();
-            if (progress.world.ENEMY_HEALTH.containsKey(nextTile)) {
-                Logger.getLogger("GameWindow").info("nextTile: '" + nextTile + "' is an enemy");
-                currentTile.setText(nextTile);
-                enemyHealthLabel.setText(progress.world.currentEnemyHealth + "/" + progress.world.ENEMY_HEALTH.get(nextTile));
+            if (progress.world.enemyEncountered()) {
+                Enemy nextEnemy = (Enemy)progress.world.getNextEntity();
+                currentTile.setText(nextEnemy.symbol);
+                enemyHealthLabel.setText(progress.world.currentEnemyHealth + "/" + nextEnemy.type.health);
                 enemyHealthLabel.setForeground(JBColor.RED);
 
-                enemyHealthProgressBar.setMaximum(progress.world.ENEMY_HEALTH.get(nextTile));
+                enemyHealthProgressBar.setMaximum(nextEnemy.type.health);
                 enemyHealthProgressBar.setValue(progress.world.currentEnemyHealth);
                 enemyHealthProgressBar.setBackground(JBColor.RED);
             } else {
-                Logger.getLogger("GameWindow").info("nextTile: '" + nextTile + "' is NOT an enemy");
+                Entity nextEntity = progress.world.getNextEntity();
                 currentTile.setText(" ");
                 enemyHealthLabel.setText("Safe");
                 enemyHealthLabel.setForeground(JBColor.GRAY);
@@ -179,8 +177,6 @@ public class GameWindow implements ToolWindowFactory {
         healthText.setAlignmentX(Component.CENTER_ALIGNMENT);
         panel.add(healthText);
         panel.add(playerHealthProgressBar);
-
-
 
         panel.add(scoreLabel);
         panel.add(worldViewLabel);

@@ -44,7 +44,7 @@ public final class VamifyProgress implements PersistentStateComponent<VamifyProg
         myState.health = player.health;
         myState.level = player.level;
         myState.score = player.score;
-        myState.world = world.world;
+        myState.world = world.getWorldForState();
         return myState;
     }
 

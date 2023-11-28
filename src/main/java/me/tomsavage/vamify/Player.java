@@ -21,7 +21,7 @@ public class Player {
 
     public int scoreForLevel(int level) {
         double DIFFICULTY_RAMP = 1.5;
-        double LEVEL_MULTIPLIER = 400;
+        double LEVEL_MULTIPLIER = 100;
         return (int) (LEVEL_MULTIPLIER * Math.pow((double) level, DIFFICULTY_RAMP));
     }
 

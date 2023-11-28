@@ -4,19 +4,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 
 public class World {
 
-    private final String PLAYER = "🧍";
-
-    public ArrayList<String> world;
+    public ArrayList<Entity> world;
 
     public final ArrayList<String> EMPTY_TILES = new ArrayList<>(Arrays.asList(".",",","_"));
 
     public final ArrayList<String> ENEMIES = new ArrayList<>(Arrays.asList( "🐖","🦁","🦛","👻","🤡","🤖","👹","👽","💀"));
-
-    public final HashMap<String, Integer> ENEMY_HEALTH;
 
     public @Nullable Integer currentEnemyHealth = null;
 
@@ -26,63 +21,73 @@ public class World {
         this.player = player;
 
         this.world = new ArrayList<>();
-
-        ENEMY_HEALTH = new HashMap<>();
-        ENEMY_HEALTH.put("🐖", 10);
-        ENEMY_HEALTH.put("🦁", 15);
-        ENEMY_HEALTH.put("🦛", 20);
-        ENEMY_HEALTH.put("👻", 25);
-        ENEMY_HEALTH.put("🤡", 40);
-        ENEMY_HEALTH.put("👹", 50);
-        ENEMY_HEALTH.put("👽", 60);
-        ENEMY_HEALTH.put("🤖", 100);
-        ENEMY_HEALTH.put("💀", 200);
     }
 
     public String getWorldRendered() {
         StringBuilder worldRendered = new StringBuilder();
+        String PLAYER = "🧍";
         worldRendered.append(PLAYER);
-        for (String entity : world) {
-            worldRendered.append(getTileFromWorldEntity(entity));
+        for (Entity entity : world) {
+            worldRendered.append(entity.symbol);
         }
         return worldRendered.toString();
     }
 
     public String getNextTile() {
-        return getTileFromWorldEntity(world.get(0));
+        return world.get(0).symbol;
+    }
+
+    public Entity getNextEntity() {
+        return world.get(0);
     }
 
     public @Nullable Integer getCurrentEnemyHealthIfApplicable() {
-        String nextTile = getTileFromWorldEntity(world.get(0));
-        if (ENEMY_HEALTH.containsKey(nextTile)) {
-            return ENEMY_HEALTH.get(nextTile);
-        }
-        return null;
+        Entity nextTile = world.get(0);
+        return nextTile instanceof Enemy ? ((Enemy) nextTile).health : null;
     }
 
     public void setWorld(ArrayList<String> world) {
-        this.world = world;
+        this.world = new ArrayList<>();
+        for (String worldEntity : world) {
+            this.world.add(parseStringToEntityForState(worldEntity));
+        }
         currentEnemyHealth = getCurrentEnemyHealthIfApplicable();
     }
 
-    private String getTileFromWorldEntity(String worldEntity) {
-        try {
-            // try to parse the tile to an integer
-            int emojiIndex = Integer.parseInt(worldEntity);
-            return ENEMIES.get(emojiIndex);
-        } catch (NumberFormatException e) {
-            // if it's not an integer, just add it to the string
-            return worldEntity;
+    private Entity parseStringToEntityForState(String worldEntity) {
+        if (worldEntity.startsWith(Enemy.ENTITY_PREFIX)) {
+            int ID = Integer.parseInt(worldEntity.substring(Enemy.ENTITY_PREFIX.length()));
+            EnemyType type = EnemyType.getByID(ID);
+            assert type != null;
+            return new Enemy(type);
+        } else {
+            return new EmptyEntity(); //Integer.parseInt(worldEntity.substring(EmptyEntity.getIDPrefix().length())));
         }
     }
 
-    private String generateNextTile() {
-        String nextTile;
+    private String convertEntityToStringForState(Entity entity) {
+        if (entity instanceof EmptyEntity) {
+            return EmptyEntity.ENTITY_PREFIX + entity.ID;
+        } else if (entity instanceof Enemy) {
+            return Enemy.ENTITY_PREFIX + entity.ID;
+        } else {
+            throw new IllegalArgumentException("Entity must be an instance of EmptyEntity or Enemy");
+        }
+    }
+
+    private Enemy getRandomEnemy() {
+        EnemyType enemyType = EnemyType.values()[(int) (Math.random() * EnemyType.values().length)];
+        return new Enemy(enemyType);
+    }
+
+    private Entity generateNextTile() {
+        Entity nextTile;
         if (Math.random() > getEnemySpawnProbability()) {
-            nextTile = EMPTY_TILES.get((int) (Math.random() * EMPTY_TILES.size()));
+            // for empty tiles just want to return a random empty tile
+            nextTile = new EmptyEntity();
         } else {
             // for enemies just want to return the index of the enemy
-            nextTile = String.valueOf((int) (Math.random() * ENEMIES.size()));
+            nextTile = getRandomEnemy();
         }
 
         return nextTile;
@@ -101,8 +106,11 @@ public class World {
         if (!force && world != null && !world.isEmpty()) {
             return;
         }
+        if (force) {
+            getWorldForState();
+        }
         final int WORLD_LENGTH = 20;
-        ArrayList<String> world = new ArrayList<>();
+        ArrayList<Entity> world = new ArrayList<>();
         for (int i = 0; i < WORLD_LENGTH; i++) {
             world.add(generateNextTile());
         }
@@ -110,39 +118,21 @@ public class World {
     }
 
     public void takeStep() {
-        int damagePoints = player.getHitPoints();
         player.stepScore();
 
-        String nextTile = getTileFromWorldEntity(world.get(0));
+        Entity nextEntity = world.get(0);
         // Check if nextTile is empty
-        if (EMPTY_TILES.contains(nextTile)) {
-            // Move the world one character to the left
-            world.remove(0);
-            world.add(generateNextTile());
-            nextTile = getTileFromWorldEntity(world.get(0));
-            if (ENEMY_HEALTH.containsKey(nextTile)) {
-                currentEnemyHealth = ENEMY_HEALTH.get(nextTile);
-            }
-        } else if (ENEMY_HEALTH.containsKey(nextTile)) {
-            if (currentEnemyHealth == null) {
-                currentEnemyHealth = ENEMY_HEALTH.get(nextTile);
-            }
-            // Do damage to the enemy
-            currentEnemyHealth -= damagePoints;
-
-            if (currentEnemyHealth <= 0) {
-                // Remove the enemy from the world and move the world one character to the left
-                world.remove(0);
-                world.add(generateNextTile());
+        if (enemyEncountered()) {
+            Enemy enemy = (Enemy) nextEntity;
+            currentEnemyHealth = enemy.health;
+            enemy.takeTurn(player);
+            if (enemy.shouldDespawn()) {
                 currentEnemyHealth = null;
-                nextTile = getTileFromWorldEntity(world.get(0));
-                if (ENEMY_HEALTH.containsKey(nextTile)) {
-                    currentEnemyHealth = ENEMY_HEALTH.get(nextTile);
-                }
-            } else {
-                // enemy attacks - this is okay for now, but will need tweaking
-                player.health -= (int) (Math.random() * ENEMY_HEALTH.get(nextTile) * 0.02);
+                handleMoveRight();
             }
+        } else if (nextTileIsEmpty()) {
+            // Move the world one character to the left
+            handleMoveRight();
         }
 
         if (player.health <= 0) {
@@ -152,5 +142,30 @@ public class World {
         } else {
             player.levelUpIfNeeded();
         }
+    }
+
+    private void handleMoveRight() {
+        world.remove(0);
+        world.add(generateNextTile());
+        Entity nextEntity = world.get(0);
+        if (nextEntity instanceof Enemy) {
+            currentEnemyHealth = ((Enemy) nextEntity).health;
+        }
+    }
+
+    public boolean enemyEncountered() {
+        return world.get(0) instanceof Enemy;
+    }
+
+    private boolean nextTileIsEmpty() {
+        return EMPTY_TILES.contains(getNextTile());
+    }
+
+    public ArrayList<String> getWorldForState() {
+        ArrayList<String> worldForState = new ArrayList<>();
+        for (Entity entity : world) {
+            worldForState.add(convertEntityToStringForState(entity));
+        }
+        return worldForState;
     }
 }
