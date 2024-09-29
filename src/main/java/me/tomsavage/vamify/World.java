@@ -1,6 +1,9 @@
 package me.tomsavage.vamify;
 
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
+import com.intellij.util.messages.MessageBus;
+import com.intellij.openapi.project.Project;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,9 +12,10 @@ public class World {
 
     public ArrayList<Entity> world;
 
-    public final ArrayList<String> EMPTY_TILES = new ArrayList<>(Arrays.asList(".",",","_"));
+    public final ArrayList<String> EMPTY_TILES = new ArrayList<>(Arrays.asList(".", ",", "_"));
 
-    public final ArrayList<String> ENEMIES = new ArrayList<>(Arrays.asList( "🐖","🦁","🦛","👻","🤡","🤖","👹","👽","💀"));
+    public final ArrayList<String> ENEMIES = new ArrayList<>(
+            Arrays.asList("🐖", "🦁", "🦛", "👻", "🤡", "🤖", "👹", "👽", "💀"));
 
     public @Nullable Integer currentEnemyHealth = null;
 
@@ -61,7 +65,7 @@ public class World {
             assert type != null;
             return new Enemy(type);
         } else {
-            return new EmptyEntity(); //Integer.parseInt(worldEntity.substring(EmptyEntity.getIDPrefix().length())));
+            return new EmptyEntity(); // Integer.parseInt(worldEntity.substring(EmptyEntity.getIDPrefix().length())));
         }
     }
 
@@ -102,6 +106,7 @@ public class World {
     public void generateWorld() {
         generateWorld(false);
     }
+
     public void generateWorld(boolean force) {
         if (!force && world != null && !world.isEmpty()) {
             return;
@@ -117,7 +122,7 @@ public class World {
         this.world = world;
     }
 
-    public void takeStep() {
+    public void takeStep(@NotNull Project project) {
         player.stepScore();
 
         Entity nextEntity = world.get(0);
@@ -138,7 +143,8 @@ public class World {
         if (player.health <= 0) {
             generateWorld(true);
             player.restart();
-            // TODO: Fire an event that can be picked up by the UI
+            MessageBus messageBus = project.getMessageBus();
+            messageBus.syncPublisher(GameWindowUpdateNotifier.GAME_OVER_TOPIC).updateGameWindow();
         } else {
             player.levelUpIfNeeded();
         }

@@ -5,14 +5,20 @@ public class Player {
     public int level;
     public int health;
 
+    public int highScore;
+    public int highLevel;
+
     public Player() {
-        this(0, 1, 100);
+        this(0, 1, 100, 0, 1);
     }
 
-    public Player(int score, int level, int health) {
+    public Player(int score, int level, int health, int highScore, int highLevel) {
         this.score = score;
         this.level = level;
         this.health = health;
+
+        this.highScore = highScore > score ? highScore : score;
+        this.highLevel = highLevel > level ? highLevel : level;
     }
 
     public int maxHealthForLevel(int level) {
@@ -31,6 +37,9 @@ public class Player {
 
     public void stepScore() {
         score += getScoreIncrement();
+        if (score > highScore) {
+            highScore = score;
+        }
     }
 
     public void restart() {
@@ -59,5 +68,8 @@ public class Player {
 
     private void incrementLevel() {
         level++;
+        if (level > highLevel) {
+            highLevel = level;
+        }
     }
 }

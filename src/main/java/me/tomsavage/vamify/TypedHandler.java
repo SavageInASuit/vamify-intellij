@@ -17,7 +17,7 @@ public class TypedHandler extends TypedHandlerDelegate {
     public @NotNull Result charTyped(char c, @NotNull Project project, @NotNull Editor editor, @NotNull PsiFile file) {
         VamifyProgress progress = ApplicationManager.getApplication().getService(VamifyProgress.class);
 
-        progress.world.takeStep();
+        progress.world.takeStep(project);
 
         MessageBus messageBus = project.getMessageBus();
         messageBus.syncPublisher(GameWindowUpdateNotifier.TOPIC).updateGameWindow();
